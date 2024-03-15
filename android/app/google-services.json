@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "677763459641",
+    "project_id": "ticket-tracking-app",
+    "storage_bucket": "ticket-tracking-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:677763459641:android:a37719f975db83949f7be8",
+        "android_client_info": {
+          "package_name": "com.example.machine_test1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7L2e32PmnjlZXgXUz8_M-YSEszeTONjY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
