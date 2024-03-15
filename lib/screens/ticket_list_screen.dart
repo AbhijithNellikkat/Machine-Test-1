@@ -16,7 +16,7 @@ class _TicketListScreenState extends State<TicketListScreen> {
   final FireStoreServices fireStoreServices = FireStoreServices();
 
   final CollectionReference collectionReference =
-      FirebaseFirestore.instance.collection("datas");
+      FirebaseFirestore.instance.collection("Tickets");
 
   @override
   Widget build(BuildContext context) {
@@ -28,18 +28,22 @@ class _TicketListScreenState extends State<TicketListScreen> {
         stream: collectionReference.snapshots(),
         builder: (context, AsyncSnapshot snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const CircularProgressIndicator(); // Show loading indicator while waiting for data
+            return const CircularProgressIndicator();
           } else if (snapshot.hasError) {
             return Text('Error: ${snapshot.error}');
           } else if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return const Text('No data available');
           } else {
-            log('Received ${snapshot.data!.docs.length} documents'); // Print number of documents received
+            log('Received ${snapshot.data!.docs.length} documents');
             return ListView.builder(
               itemCount: snapshot.data!.docs.length,
               itemBuilder: (context, index) {
                 final ticket = snapshot.data!.docs[index];
-                return Text(ticket['title']);
+                return ListTile(
+                  leading: const CircleAvatar(),
+                  title: Text(ticket['title']),
+                  subtitle: Text(ticket['description']),
+                );
               },
             );
           }
@@ -56,3 +60,5 @@ class _TicketListScreenState extends State<TicketListScreen> {
     );
   }
 }
+
+
