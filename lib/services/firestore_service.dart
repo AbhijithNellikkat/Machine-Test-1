@@ -22,3 +22,36 @@ class FireStoreServices {
     }).toList();
   }
 }
+
+
+// late Position currentPosition;
+  // String currentAddress = "My Address";
+
+  // void getCurrentPosition() async {
+  //   LocationPermission permission = await Geolocator.checkPermission();
+  //   if (permission == LocationPermission.denied ||
+  //       permission == LocationPermission.deniedForever) {
+  //     Fluttertoast.showToast(
+  //         msg:
+  //             "Permission for accessing location is denied,Please go to settings and turn on");
+  //     Geolocator.requestPermission();
+  //   } else {
+  //     Position position = await Geolocator.getCurrentPosition(
+  //         desiredAccuracy: LocationAccuracy.best);
+
+  //     try {
+  //       List<Placemark> placemarks = await placemarkFromCoordinates(
+  //           position.latitude, position.longitude);
+  //       Placemark place = placemarks[0];
+  //       setState(() {
+  //         currentPosition = position;
+  //         currentAddress =
+  //             "${place.locality},${place.postalCode},${place.country}";
+  //         _locationController.text = currentAddress;
+  //         log(currentAddress);
+  //       });
+  //     } catch (e) {
+  //       Fluttertoast.showToast(msg: e.toString());
+  //     }
+  //   }
+  // }

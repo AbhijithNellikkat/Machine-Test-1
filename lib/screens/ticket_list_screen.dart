@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:machine_test1/screens/ticketDetails_screen.dart';
 import 'package:machine_test1/screens/ticket_form_screen.dart';
 import 'package:machine_test1/services/firestore_service.dart';
 
@@ -40,10 +41,15 @@ class _TicketListScreenState extends State<TicketListScreen> {
               itemBuilder: (context, index) {
                 final ticket = snapshot.data!.docs[index];
                 return ListTile(
-                  leading: const CircleAvatar(),
-                  title: Text(ticket['title']),
-                  subtitle: Text(ticket['description']),
-                );
+                    leading: const CircleAvatar(),
+                    title: Text(ticket['title']),
+                    subtitle: Text(ticket['description']),
+                    onTap: () {
+                      Navigator.of(context).push(MaterialPageRoute(
+                        builder: (context) =>
+                            TicketDetailsScreen(ticket: ticket),
+                      ));
+                    });
               },
             );
           }
@@ -60,5 +66,3 @@ class _TicketListScreenState extends State<TicketListScreen> {
     );
   }
 }
-
-

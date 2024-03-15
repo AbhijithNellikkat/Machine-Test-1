@@ -2,6 +2,9 @@ import 'dart:developer';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
 
 class TicketFormScreen extends StatefulWidget {
   const TicketFormScreen({Key? key}) : super(key: key);
@@ -20,21 +23,67 @@ class _TicketFormScreenState extends State<TicketFormScreen> {
   final CollectionReference collectionReference =
       FirebaseFirestore.instance.collection("Tickets");
 
-  void _submitForm() {
+  Position? currentLocation;
+  // late bool servicePermission = false;
+  // late LocationPermission permission;
+
+  String currentAddress = "demo";
+
+  bool isLoading = true;
+
+  Future<void> getCurrentLocation() async {
+    setState(() {
+      isLoading = true; // Set isLoading to true when fetching location
+    });
+
+    LocationPermission permission = await Geolocator.checkPermission();
+
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      Fluttertoast.showToast(
+          msg:
+              "Permission for accessing location is denied, Please go to settings and turn on");
+      Geolocator.requestPermission();
+    } else {
+      Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.best);
+
+      List<Placemark> placemarks =
+          await placemarkFromCoordinates(position.latitude, position.longitude);
+
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks[0];
+        currentLocation = position;
+        currentAddress =
+            "${place.locality}, ${place.postalCode}, ${place.country}";
+
+        _locationController.text = currentAddress; // Update location text field
+        setState(() {
+          isLoading =
+              false; // Set isLoading to false after location is fetched and text field is updated
+        });
+      }
+    }
+  }
+
+  void _submitForm() async {
     if (_formKey.currentState!.validate()) {
       DateTime now = DateTime.now();
 
       final data = {
         "title": _titleController.text,
         "description": _descriptionController.text,
-        "location": _locationController.text,
+        "location":
+            _locationController.text, // Make sure location is added here
         "reportedDate": now,
         "attachmentUrl": _attachmentController.text
       };
 
-      collectionReference.add(data);
+      await collectionReference.add(data);
+
       log("New Ticket is Created");
 
+      // ignore: use_build_context_synchronously
       Navigator.of(context).pop();
     }
   }
@@ -64,7 +113,7 @@ class _TicketFormScreenState extends State<TicketFormScreen> {
                 ),
                 TextFormField(
                   controller: _descriptionController,
-                  decoration: InputDecoration(labelText: 'Description'),
+                  decoration: const InputDecoration(labelText: 'Description'),
                   validator: (value) {
                     if (value!.isEmpty) {
                       return 'Please enter a description';
@@ -74,7 +123,9 @@ class _TicketFormScreenState extends State<TicketFormScreen> {
                 ),
                 TextFormField(
                   controller: _locationController,
-                  decoration: InputDecoration(labelText: 'Location'),
+                  decoration: const InputDecoration(
+                    labelText: 'Location',
+                  ),
                   validator: (value) {
                     if (value!.isEmpty) {
                       return 'Please enter a location';
@@ -82,22 +133,32 @@ class _TicketFormScreenState extends State<TicketFormScreen> {
                     return null;
                   },
                 ),
+                const SizedBox(height: 10),
+                OutlinedButton(
+                  onPressed: () async {
+                    await getCurrentLocation();
+                  },
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 70, vertical: 10),
+                    child: Icon(Icons.location_on),
+                  ),
+                ),
+                const SizedBox(height: 20),
                 TextFormField(
                   controller: _attachmentController,
-                  decoration: InputDecoration(labelText: 'Attachment'),
+                  decoration: const InputDecoration(labelText: 'Attachment'),
                   validator: (value) {
                     if (value!.isEmpty) {
-                      return 'Please enter a Attachment';
+                      return 'Please enter an attachment';
                     }
                     return null;
                   },
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: _submitForm,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 90, vertical: 10),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 90, vertical: 10),
                     child: Text('Submit'),
                   ),
                 ),
