@@ -27,7 +27,7 @@ class _TicketListScreenState extends State<TicketListScreen> {
     super.initState();
     notificationService.requestNotificationPermission();
     notificationService.firebaseInit(context);
-    // notificationService.isTokenRefresh();
+   
     notificationService.getDeviceToken().then((value) {
       log("Device Token : $value");
     });

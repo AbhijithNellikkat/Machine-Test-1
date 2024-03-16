@@ -1,10 +1,11 @@
-// ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously
-
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geocoding/geocoding.dart';
@@ -13,7 +14,7 @@ import 'package:http/http.dart' as http;
 import 'package:machine_test1/services/notification_service.dart';
 
 class TicketFormScreen extends StatefulWidget {
-  const TicketFormScreen({super.key});
+  const TicketFormScreen({Key? key}) : super(key: key);
 
   @override
   _TicketFormScreenState createState() => _TicketFormScreenState();
@@ -32,6 +33,7 @@ class _TicketFormScreenState extends State<TicketFormScreen> {
 
   Position? currentLocation;
   late bool isLoading;
+  late String? downloadLink;
 
   @override
   void initState() {
@@ -71,6 +73,41 @@ class _TicketFormScreenState extends State<TicketFormScreen> {
     }
   }
 
+  Future<String?> uploadPdf(String fileName, File file) async {
+    final reference =
+        FirebaseStorage.instance.ref().child('pdfs/$fileName.pdf');
+
+    final uploadTask = reference.putFile(file);
+
+    await uploadTask.whenComplete(() {});
+
+    final downloadLink = await reference.getDownloadURL();
+
+    return downloadLink;
+  }
+
+  pickFile() async {
+    final pickedFile = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+    );
+
+    if (pickedFile != null) {
+      String fileName = pickedFile.files[0].name;
+
+      File file = File(pickedFile.files[0].path ?? '');
+
+      final link = await uploadPdf(fileName, file);
+
+      String filePath = pickedFile.files.single.path!;
+
+      setState(() {
+        downloadLink = link;
+        _attachmentController.text = filePath;
+      });
+    }
+  }
+
   void _submitForm() async {
     if (_formKey.currentState!.validate()) {
       DateTime now = DateTime.now();
@@ -80,7 +117,8 @@ class _TicketFormScreenState extends State<TicketFormScreen> {
         "description": _descriptionController.text,
         "location": _locationController.text,
         "reportedDate": now,
-        "attachmentUrl": _attachmentController.text
+        "attachmentUrl":
+            downloadLink ?? '', // Handle the case if downloadLink is null
       };
 
       await collectionReference.add(data);
@@ -183,7 +221,7 @@ class _TicketFormScreenState extends State<TicketFormScreen> {
                       ),
                     ),
                     IconButton(
-                      onPressed: () async {},
+                      onPressed: pickFile,
                       icon: const Icon(Icons.attach_file),
                     ),
                   ],
