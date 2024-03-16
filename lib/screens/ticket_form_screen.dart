@@ -1,13 +1,19 @@
+// ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously
+
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
+import 'package:machine_test1/services/notification_service.dart';
 
 class TicketFormScreen extends StatefulWidget {
-  const TicketFormScreen({Key? key}) : super(key: key);
+  const TicketFormScreen({super.key});
 
   @override
   _TicketFormScreenState createState() => _TicketFormScreenState();
@@ -22,18 +28,20 @@ class _TicketFormScreenState extends State<TicketFormScreen> {
 
   final CollectionReference collectionReference =
       FirebaseFirestore.instance.collection("Tickets");
+  NotificationService notificationService = NotificationService();
 
   Position? currentLocation;
-  // late bool servicePermission = false;
-  // late LocationPermission permission;
+  late bool isLoading;
 
-  String currentAddress = "demo";
-
-  bool isLoading = true;
+  @override
+  void initState() {
+    super.initState();
+    isLoading = false;
+  }
 
   Future<void> getCurrentLocation() async {
     setState(() {
-      isLoading = true; // Set isLoading to true when fetching location
+      isLoading = true;
     });
 
     LocationPermission permission = await Geolocator.checkPermission();
@@ -54,13 +62,10 @@ class _TicketFormScreenState extends State<TicketFormScreen> {
       if (placemarks.isNotEmpty) {
         Placemark place = placemarks[0];
         currentLocation = position;
-        currentAddress =
+        _locationController.text =
             "${place.locality}, ${place.postalCode}, ${place.country}";
-
-        _locationController.text = currentAddress; // Update location text field
         setState(() {
-          isLoading =
-              false; // Set isLoading to false after location is fetched and text field is updated
+          isLoading = false;
         });
       }
     }
@@ -73,8 +78,7 @@ class _TicketFormScreenState extends State<TicketFormScreen> {
       final data = {
         "title": _titleController.text,
         "description": _descriptionController.text,
-        "location":
-            _locationController.text, // Make sure location is added here
+        "location": _locationController.text,
         "reportedDate": now,
         "attachmentUrl": _attachmentController.text
       };
@@ -83,10 +87,29 @@ class _TicketFormScreenState extends State<TicketFormScreen> {
 
       log("New Ticket is Created");
 
-      // ignore: use_build_context_synchronously
+      notificationService.getDeviceToken().then((value) async {
+        var notificationMessage = {
+          'to': value.toString(),
+          'priority': 'high',
+          'notification': {
+            'title': _titleController.text,
+            'body': _descriptionController.text,
+          }
+        };
+
+        await http.post(Uri.parse('https://fcm.googleapis.com/fcm/send'),
+            body: jsonEncode(notificationMessage),
+            headers: {
+              'Content-Type': 'application/json; charset=UTF-8',
+              'Authorization':
+                  'key=AAAAnc3Zqjk:APA91bHOJGHYSubZeWjnvX2YbdXKuzuh0Uf7ggE6vuAUioVjWy4hNM7zdcqVAPFpX5MjMgfzN-eZcv-IonGakMLtF0FP85G4Jh2awUhDDLAL3kn28ofQNwO3l0_aoJrXVpFAVjtNJR70',
+            });
+      });
       Navigator.of(context).pop();
     }
   }
+
+  final FirebaseMessaging firebaseMessaging = FirebaseMessaging.instance;
 
   @override
   Widget build(BuildContext context) {
@@ -123,6 +146,7 @@ class _TicketFormScreenState extends State<TicketFormScreen> {
                 ),
                 TextFormField(
                   controller: _locationController,
+                  enabled: false,
                   decoration: const InputDecoration(
                     labelText: 'Location',
                   ),
@@ -134,25 +158,35 @@ class _TicketFormScreenState extends State<TicketFormScreen> {
                   },
                 ),
                 const SizedBox(height: 10),
-                OutlinedButton(
-                  onPressed: () async {
-                    await getCurrentLocation();
-                  },
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 70, vertical: 10),
-                    child: Icon(Icons.location_on),
-                  ),
-                ),
+                isLoading
+                    ? const CircularProgressIndicator()
+                    : OutlinedButton(
+                        onPressed: () async {
+                          await getCurrentLocation();
+                        },
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 70, vertical: 10),
+                          child: Icon(Icons.location_on),
+                        ),
+                      ),
                 const SizedBox(height: 20),
-                TextFormField(
-                  controller: _attachmentController,
-                  decoration: const InputDecoration(labelText: 'Attachment'),
-                  validator: (value) {
-                    if (value!.isEmpty) {
-                      return 'Please enter an attachment';
-                    }
-                    return null;
-                  },
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _attachmentController,
+                        decoration:
+                            const InputDecoration(labelText: 'Attachment'),
+                        enabled: true,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () async {},
+                      icon: const Icon(Icons.attach_file),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(

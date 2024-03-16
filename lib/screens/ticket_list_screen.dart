@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:machine_test1/screens/ticketDetails_screen.dart';
 import 'package:machine_test1/screens/ticket_form_screen.dart';
 import 'package:machine_test1/services/firestore_service.dart';
+import 'package:machine_test1/services/notification_service.dart';
 
 class TicketListScreen extends StatefulWidget {
   const TicketListScreen({super.key});
@@ -16,8 +17,21 @@ class TicketListScreen extends StatefulWidget {
 class _TicketListScreenState extends State<TicketListScreen> {
   final FireStoreServices fireStoreServices = FireStoreServices();
 
+  final NotificationService notificationService = NotificationService();
+
   final CollectionReference collectionReference =
       FirebaseFirestore.instance.collection("Tickets");
+
+  @override
+  void initState() {
+    super.initState();
+    notificationService.requestNotificationPermission();
+    notificationService.firebaseInit(context);
+    // notificationService.isTokenRefresh();
+    notificationService.getDeviceToken().then((value) {
+      log("Device Token : $value");
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
